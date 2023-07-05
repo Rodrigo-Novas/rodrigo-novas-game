@@ -4,7 +4,7 @@
 	"height": 10,
 	"background-color": [130, 182, 255],
 	"background-img": "/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/backgrounds/mountains.png",
-	"background-position": "top",
+	"background-position": "bottom",
 	"background-repeat-x": 1,
 	"background-fill-y": 1,
 	"scenery-img": "/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/backgrounds/forest.png",

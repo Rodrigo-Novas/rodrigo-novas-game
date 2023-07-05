@@ -605,7 +605,7 @@ class Level:
 
             self.starting_flag.append(Flag(x, y, img))
 
-        self.background_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32)
+        self.background_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32) # depth representa el numero de bits a usar para un color
         self.scenery_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32)
         self.inactive_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32)
         self.active_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32)
