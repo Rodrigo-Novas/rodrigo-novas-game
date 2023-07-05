@@ -28,7 +28,7 @@ from utils.constants import (
     GREEN,
     DOWN_VOLUME,
     UP_VOLUME,
-    SOUND_OF
+    SOUND_OF,
 )
 
 
@@ -36,6 +36,7 @@ import pygame
 
 
 RANDOM_COL = RandomColour()
+
 
 class Helper:
     def __init__(self, sound_on: bool = True) -> None:
@@ -98,9 +99,9 @@ class Entity(pygame.sprite.Sprite):
         super().__init__()
 
         self.image = image
-        self.image.set_colorkey(GREEN) # SACO FONDO VERDE SI LO TIENE
+        self.image.set_colorkey(GREEN)  # SACO FONDO VERDE SI LO TIENE
 
-        self.rect = self.image.get_rect() # Para posicionar nuestro sprite
+        self.rect = self.image.get_rect()  # Para posicionar nuestro sprite
         self.rect.x = x
         self.rect.y = y
 
@@ -121,7 +122,7 @@ class Block(Entity):
 
 
 class Flame(Entity):
-    def __init__(self, image, facing_right, flame_state = "ready") -> Any:
+    def __init__(self, image, facing_right, flame_state="ready") -> Any:
         super().__init__(0, 0, image, 200, 200)
         self.image_flame = pygame.transform.flip(image, 1, 0)
         self.image_flame_left = pygame.transform.flip(image, 1, 0)
@@ -148,6 +149,7 @@ class Flame(Entity):
 
     def update(self, level):
         self.process_enemies_flame(level.enemies)
+
 
 class Warrior(Entity):
     def __init__(self, images):
@@ -205,8 +207,6 @@ class Warrior(Entity):
             self.rect.left = 0
         elif self.rect.right > level.width:
             self.rect.right = level.width
-
-
 
     def move_and_process_blocks(self, blocks):
         self.rect.x += self.vx
@@ -331,7 +331,7 @@ class Warrior(Entity):
 
 
 class Enemy(Entity):
-    def __init__(self, x, y, images, hearts = 1):
+    def __init__(self, x, y, images, hearts=1):
         super().__init__(x, y, images[0], GRID_SIZE, GRID_SIZE)
 
         self.images_left = images
@@ -509,9 +509,11 @@ class Bear(Enemy):
         if reverse:
             self.reverse()
 
+
 class OneUp(Entity):
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
+
 
 class Diamond(Entity):
     def __init__(self, x, y, image):
@@ -522,16 +524,18 @@ class DiamondBlack(Entity):
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
 
+
 class Heart(Entity):
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
+
 
 class Flag(Entity):
     def __init__(self, x, y, image):
         super().__init__(x, y, image)
 
 
-class Level():
+class Level:
     def __init__(self, file_path):
         self.starting_blocks = []
         self.starting_enemies = []
@@ -542,7 +546,7 @@ class Level():
         self.starting_diamond_black = []
         self.starting_buttons = []
 
-        self.blocks = pygame.sprite.Group() # esto es una lista para almacenar las instancias de mis entidades
+        self.blocks = pygame.sprite.Group()  # esto es una lista para almacenar las instancias de mis entidades
         self.enemies = pygame.sprite.Group()
         self.band_aid = pygame.sprite.Group()
         self.diamonds = pygame.sprite.Group()
@@ -565,7 +569,6 @@ class Level():
 
         self.start_x = map_data["start"][0] * GRID_SIZE
         self.start_y = map_data["start"][1] * GRID_SIZE
-
 
         for item in map_data["blocks"]:
             x, y = item[0] * GRID_SIZE, item[1] * GRID_SIZE
@@ -670,7 +673,7 @@ class Level():
         for s in self.inactive_sprites:
             s.image.convert()
 
-        self.inactive_sprites.draw(self.inactive_layer) # aca creo mis sprites
+        self.inactive_sprites.draw(self.inactive_layer)  # aca creo mis sprites
 
         self.background_layer.convert()
         self.scenery_layer.convert()
@@ -689,7 +692,7 @@ class Level():
             e.reset()
 
 
-class Pause():
+class Pause:
     def __init__(self):
         self.paused = pygame.mixer.music.get_busy()
 
@@ -701,9 +704,10 @@ class Pause():
         self.paused = not self.paused
 
 
-class Volume():
+class Volume:
     def __init__(self):
         self.count = pygame.mixer.music.get_volume()
+
     def toggle(self, up=False):
         if up:
             self.count += 0.2
@@ -714,7 +718,8 @@ class Volume():
             if self.count > 0:
                 pygame.mixer.music.set_volume(self.count)
 
-class Game():
+
+class Game:
     SPLASH = 0
     START = 1
     PLAYING = 2
