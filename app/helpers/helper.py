@@ -1,11 +1,14 @@
+"""Helper module."""
+
 import pygame
+from utils.constants import GRID_SIZE
 
-GRID_SIZE = 64
 
-class Helper():
+class Helper:
     def __init__(self, sound_on: bool = True) -> None:
         self.__sound_on = sound_on
-    
+
+    @staticmethod
     def load_image(file_path, width=GRID_SIZE, height=GRID_SIZE):
         img = pygame.image.load(file_path)
         img = pygame.transform.scale(img, (width, height))

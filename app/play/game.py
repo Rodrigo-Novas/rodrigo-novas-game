@@ -1,13 +1,21 @@
+"""Game module."""
+
 import json
 import sys
 from typing import Any
 import pygame
+from helpers.helper import Helper
 from utils.colors import RandomColour
+from utils.bdd import Connection
+from utils.buttons import Button
 from utils.constants import (
     JUMP_SOUND,
     DIE_SOUND,
     HURT_SOUND,
     LEVELUP_SOUND,
+    EARNED_SOUND,
+    EARNED_PLUS_SOUND,
+    CURE_SOUND,
     GAMEOVER_SOUND,
     FPS,
     WIDTH,
@@ -29,6 +37,8 @@ from utils.constants import (
     DOWN_VOLUME,
     UP_VOLUME,
     SOUND_OF,
+    RESTART_K,
+    menu_font,
 )
 
 
@@ -37,26 +47,7 @@ import pygame
 
 RANDOM_COL = RandomColour()
 
-
-class Helper:
-    def __init__(self, sound_on: bool = True) -> None:
-        self.__sound_on = sound_on
-
-    @staticmethod
-    def load_image(file_path, width=GRID_SIZE, height=GRID_SIZE):
-        img = pygame.image.load(file_path)
-        img = pygame.transform.scale(img, (width, height))
-
-        return img
-
-    def play_sound(self, sound, loops=0, maxtime=0, fade_ms=0):
-        if self.__sound_on:
-            sound.play(loops, maxtime, fade_ms)
-
-    def play_music(self):
-        if self.__sound_on:
-            pygame.mixer.music.play(-1)
-
+con = Connection()
 
 helper = Helper()
 
@@ -88,6 +79,12 @@ flag_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game
 flagpole_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/items/flagpole.png")
 flame_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/flame/fuego.png")
 manual_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/manual/manual.png")
+
+
+up_volume_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/music/down.png")
+down_volume_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/music/up.png")
+sound_of_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/music/volume.png")
+
 
 monster_img1 = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/monster/monster-1.png")
 monster_img2 = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/monster/monster-2.png")
@@ -203,7 +200,7 @@ class Warrior(Entity):
         self.rect.y -= 1
 
     def check_world_boundaries(self, level):
-        if self.rect.left < 0:
+        if self.rect.left < 0:  # El valor int de la coordenada X del lado izquierdo del rectángulo
             self.rect.left = 0
         elif self.rect.right > level.width:
             self.rect.right = level.width
@@ -221,7 +218,7 @@ class Warrior(Entity):
                 self.vx = 0
 
         self.on_ground = False
-        self.rect.y += self.vy + 1  # the +1 is hacky. not sure why it helps.
+        self.rect.y += self.vy + 1
         hit_list = pygame.sprite.spritecollide(self, blocks, False)
 
         for block in hit_list:
@@ -244,18 +241,21 @@ class Warrior(Entity):
         hit_list = pygame.sprite.spritecollide(self, band_aid, True)
 
         if len(hit_list) > 0 and self.hearts < 5:
+            helper.play_sound(CURE_SOUND)
             self.hearts += 1
 
     def process_diamond(self, diamonds):
         hit_list = pygame.sprite.spritecollide(self, diamonds, True)
 
         if len(hit_list) > 0:
+            helper.play_sound(EARNED_SOUND)
             self.score += 1
 
     def process_diamond_black(self, diamonds_black):
         hit_list = pygame.sprite.spritecollide(self, diamonds_black, True)
 
         if len(hit_list) > 0:
+            helper.play_sound(EARNED_PLUS_SOUND)
             self.score += 10
 
     def check_flag(self, level):
@@ -273,7 +273,7 @@ class Warrior(Entity):
                 else:
                     self.running_images = self.images_run_left
 
-                self.steps = (self.steps + 1) % self.speed  # Works well with 2 images, try lower number if more frames are in animation
+                self.steps = (self.steps + 1) % self.speed
 
                 if self.steps == 0:
                     self.image_index = (self.image_index + 1) % len(self.running_images)
@@ -605,7 +605,10 @@ class Level:
 
             self.starting_flag.append(Flag(x, y, img))
 
-        self.background_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32) # depth representa el numero de bits a usar para un color
+        # mis distintas capas del juego
+        self.background_layer = pygame.Surface(
+            [self.width, self.height], pygame.SRCALPHA, 32
+        )  # depth representa el numero de bits a usar para un color
         self.scenery_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32)
         self.inactive_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32)
         self.active_layer = pygame.Surface([self.width, self.height], pygame.SRCALPHA, 32)
@@ -628,7 +631,7 @@ class Level:
 
             if map_data["background-repeat-x"]:
                 for x in range(0, self.width, background_img.get_width()):
-                    self.background_layer.blit(background_img, [x, start_y])
+                    self.background_layer.blit(background_img, [x, start_y])  # repito la imagen por todo el width
             else:
                 self.background_layer.blit(background_img, [0, start_y])
 
@@ -730,11 +733,12 @@ class Game:
     UNPAUSED = 7
     MANUAL = 8
 
-    def __init__(self):
+    def __init__(self, user):
         self.window = pygame.display.set_mode([WIDTH, HEIGHT])
-        pygame.display.set_caption(TITLE)
+        self.user = user
         self.clock = pygame.time.Clock()
         self.done = False
+        self.flag_insert = True
 
         self.reset()
 
@@ -768,19 +772,32 @@ class Game:
         self.qty_level = 1
         self.start()
         self.stage = Game.SPLASH
+        self.flag_insert = True
 
     def display_splash(self, surface):
         line1 = FONT_MD.render(TITLE, 1, DARK_BLUE)
         line2 = FONT_SM.render("Press any key to start.", 1, WHITE)
+        data = con.get_last_user_order_by_score(self.user)
+        if data is not None:
+            line3 = FONT_MD.render(str(data[1]), 1, DARK_BLUE)
+            line4 = FONT_MD.render(str(data[2]), 1, DARK_BLUE)
 
         x1 = WIDTH / 2 - line1.get_width() / 2
         y1 = HEIGHT / 3 - line1.get_height() / 2
 
         x2 = WIDTH / 2 - line2.get_width() / 2
         y2 = y1 + line1.get_height() + 16
+        if data is not None:
+            x3 = WIDTH / 2 - line3.get_width() / 2
+            y3 = y2 + line2.get_height() + 16
+            x4 = WIDTH / 2 - line4.get_width() / 2
+            y4 = y3 + line3.get_height() + 16
 
         surface.blit(line1, (x1, y1))
         surface.blit(line2, (x2, y2))
+        if data is not None:
+            surface.blit(line3, (x3, y3))
+            surface.blit(line4, (x4, y4))
 
     def display_paused(self, surface):
         line1 = FONT_MD.render(TITLE, 1, DARK_BLUE)
@@ -809,16 +826,29 @@ class Game:
         surface.blit(line2, (x2, y2))
 
     def display_stats(self, surface):
+        position = pygame.mouse.get_pos()
         hearts_text = FONT_SM.render("Hearts: " + str(self.hero.hearts), 1, WHITE)
         lives_text = FONT_SM.render("Lives: " + str(self.hero.lives), 1, WHITE)
         score_text = FONT_SM.render("Score: " + str(self.hero.score), 1, WHITE)
         level_text = FONT_SM.render("Level: " + str(self.current_level), 1, WHITE)
+        self.sound_btn = Button(
+            image=sound_of_img, pos=(40, 100), text_input=" ", font=menu_font(20), base_color="#d7fcd4", hovering_color=WHITE
+        )
+        self.up_btn = Button(
+            image=up_volume_img, pos=(40, 150), text_input=" ", font=menu_font(20), base_color="#d7fcd4", hovering_color=WHITE
+        )
+        self.down_btn = Button(
+            image=down_volume_img, pos=(40, 200), text_input=" ", font=menu_font(20), base_color="#d7fcd4", hovering_color=WHITE
+        )
 
         surface.blit(score_text, (WIDTH - score_text.get_width() - 32, 32))
         surface.blit(manual_img, (10, 10))
         surface.blit(hearts_text, (WIDTH - score_text.get_width() - 200, 32))
         surface.blit(lives_text, (WIDTH - score_text.get_width() - 200, 64))
         surface.blit(level_text, (WIDTH - score_text.get_width() - 200, 96))
+        for button in [self.sound_btn, self.up_btn, self.down_btn]:
+            button.change_color(position)
+            button.update(self.window)
 
     def display_manual(self, surface):
         title_text = FONT_MD.render(TITLE, 1, DARK_BLUE)
@@ -826,6 +856,8 @@ class Game:
         arrows_text = FONT_SM.render("Use arrows to move", 1, WHITE)
         pause_text = FONT_SM.render("Press P to pause", 1, WHITE)
         sound_text = FONT_SM.render("Press S to sound of/on", 1, WHITE)
+        up_volume_text = FONT_SM.render("Up volume with B", 1, WHITE)
+        down_volume_text = FONT_SM.render("Down volume with N", 1, WHITE)
         space_text = FONT_SM.render("Press SPACE to shoot", 1, WHITE)
 
         x1 = WIDTH / 2 - title_text.get_width() / 2
@@ -846,22 +878,37 @@ class Game:
         x6 = WIDTH / 2 - space_text.get_width() / 2
         y6 = y5 + instructions_text.get_height() + 10
 
+        x7 = WIDTH / 2 - up_volume_text.get_width() / 2
+        y7 = y6 + instructions_text.get_height() + 10
+
+        x8 = WIDTH / 2 - down_volume_text.get_width() / 2
+        y8 = y7 + instructions_text.get_height() + 10
+
         surface.blit(title_text, (x1, y1))
         surface.blit(instructions_text, (x2, y2))
         surface.blit(arrows_text, (x3, y3))
         surface.blit(pause_text, (x4, y4))
         surface.blit(sound_text, (x5, y5))
         surface.blit(space_text, (x6, y6))
+        surface.blit(up_volume_text, (x7, y7))
+        surface.blit(down_volume_text, (x8, y8))
 
     def process_events(self):
         self.pause_music = Pause()
         self.volume = Volume()
+        position = pygame.mouse.get_pos()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.done = True
             elif event.type == pygame.MOUSEMOTION:
                 x, y = event.pos
                 if manual_img.get_rect().collidepoint(x, y):
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                elif self.down_btn.check_input(position):
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                elif self.up_btn.check_input(position):
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                elif self.sound_btn.check_input(position):
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
                 else:
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
@@ -871,6 +918,12 @@ class Game:
                 if self.stage == Game.PLAYING:
                     if manual_img.get_rect().collidepoint(x, y):
                         self.manual_game()
+                    if self.up_btn.check_input(position):
+                        self.volume.toggle()
+                    if self.down_btn.check_input(position):
+                        self.volume.toggle(True)
+                    if self.sound_btn.check_input(position):
+                        self.pause_music.toggle()
                 elif self.stage == Game.MANUAL:
                     self.unpaused_game()
 
@@ -901,7 +954,10 @@ class Game:
                     self.advance()
 
                 elif self.stage == Game.VICTORY or self.stage == Game.GAME_OVER:
-                    if event.key == pygame.K_r:
+                    if self.flag_insert:
+                        con.insert_data(self.user, self.hero.score)
+                        self.flag_insert = False
+                    if event.key == RESTART_K:
                         self.reset()
 
         pressed = pygame.key.get_pressed()
@@ -977,7 +1033,7 @@ class Game:
         elif self.stage == Game.LEVEL_COMPLETED:
             self.display_message(self.window, "Level Complete", "Press any key to continue.")
         elif self.stage == Game.VICTORY:
-            self.display_message(self.window, "You Win!", f"Press 'R' to restart. Your SCORE: {self.hero.score}")
+            self.display_message(self.window, "You Win!", f"Press 'R' to restart.  User: {self.user} Score: {self.hero.score}")
         elif self.stage == Game.GAME_OVER:
             self.display_message(self.window, "Game Over", "Press 'R' to restart.")
 
@@ -988,11 +1044,12 @@ class Game:
             self.process_events()
             self.update()
             self.draw()
-            self.clock.tick(FPS)
+            self.clock.tick(FPS)  # por cada segundo deben pasar 60 fotogramas
 
 
-if __name__ == "__main__":
-    game = Game()
+def play(user):
+    con.create_table()
+    game = Game(user)
     game.start()
     game.loop()
     pygame.quit()

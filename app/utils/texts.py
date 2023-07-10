@@ -1,3 +1,5 @@
+"""Text module."""
+
 from abc import ABC
 
 
@@ -26,7 +28,7 @@ class NormalText(Text):
 
     def get_size_font(self) -> str:
         return self.__size_font
-    
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({self.__text},{self.__font},{self.__size_font})"
 
