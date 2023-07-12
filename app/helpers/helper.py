@@ -2,10 +2,8 @@
 
 import pygame
 from utils.constants import GRID_SIZE
+from exceptions.exception import HelperException
 
-
-# The Helper class has a constructor that takes a boolean parameter to determine if sound is on or
-# off.
 class Helper:
     def __init__(self, sound_on: bool = True) -> None:
         self.__sound_on = sound_on
@@ -28,10 +26,13 @@ class Helper:
         Returns:
             the loaded and scaled image.
         """
-        img = pygame.image.load(file_path)
-        img = pygame.transform.scale(img, (width, height))
+        try:
+            img = pygame.image.load(file_path)
+            img = pygame.transform.scale(img, (width, height))
 
-        return img
+            return img
+        except Exception as e:
+            raise HelperException(f"Error when play sound {e}")
 
     def play_sound(self, sound, loops=0, maxtime=0, fade_ms=0):
         """
@@ -52,12 +53,18 @@ class Helper:
         when it starts playing, and fade out over the same duration when it stops playing. If fade_ms is
         set. Defaults to 0
         """
-        if self.__sound_on:
-            sound.play(loops, maxtime, fade_ms)
+        try:
+            if self.__sound_on:
+                sound.play(loops, maxtime, fade_ms)
+        except Exception as e:
+            raise HelperException(f"Error when play sound {e}")
 
     def play_music(self):
         """
         The function `play_music` plays music continuously if the sound is turned on.
         """
-        if self.__sound_on:
-            pygame.mixer.music.play(-1)
+        try:
+            if self.__sound_on:
+                pygame.mixer.music.play(-1)
+        except Exception as e:
+            raise HelperException(f"Error when play sound {e}")

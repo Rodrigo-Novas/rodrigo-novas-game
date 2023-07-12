@@ -41,7 +41,6 @@ from utils.constants import (
     menu_font,
 )
 
-
 import pygame
 
 
@@ -567,9 +566,7 @@ class Level:
                 w = int(background_img.get_width() * HEIGHT / h)
                 background_img = pygame.transform.scale(background_img, (w, HEIGHT))
 
-            if "top" in map_data["background-position"]:
-                start_y = 0
-            elif "bottom" in map_data["background-position"]:
+            if "bottom" in map_data["background-position"]:
                 start_y = self.height - background_img.get_height()
 
             if map_data["background-repeat-x"]:
@@ -586,9 +583,7 @@ class Level:
                 w = int(scenery_img.get_width() * HEIGHT / h)
                 scenery_img = pygame.transform.scale(scenery_img, (w, HEIGHT))
 
-            if "top" in map_data["scenery-position"]:
-                start_y = 0
-            elif "bottom" in map_data["scenery-position"]:
+            if "bottom" in map_data["scenery-position"]:
                 start_y = self.height - scenery_img.get_height()
 
             if map_data["scenery-repeat-x"]:
