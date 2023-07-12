@@ -61,7 +61,7 @@ hero_images = {"run": [hero_walk1, hero_walk2], "jump": hero_jump, "idle": hero_
 
 block_images = {
     "TL": Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/tiles/top_left.png"),
-    "TM": Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/tiles/top_middle.png"),
+    "M": Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/tiles/top_middle.png"),
     "TR": Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/tiles/top_right.png"),
     "ER": Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/tiles/end_right.png"),
     "EL": Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/tiles/end_left.png"),
@@ -84,6 +84,7 @@ manual_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/ga
 up_volume_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/music/down.png")
 down_volume_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/music/up.png")
 sound_of_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/music/volume.png")
+pause_img = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/music/pause.png")
 
 
 monster_img1 = Helper.load_image("/Users/rodrinovas/Desktop/proyecto-integrador/game-p2/assets/monster/monster-1.png")
@@ -152,12 +153,12 @@ class Warrior(Entity):
     def __init__(self, images):
         super().__init__(0, 0, images["idle"], 200, 200)
 
-        self.image_idle_left = pygame.transform.flip(images["idle"], 1, 0)
+        self.image_idle_left = images["idle"]
         self.image_idle_right = pygame.transform.flip(images["idle"], 1, 0)
         self.images_run_left = images["run"]
         self.images_run_right = [pygame.transform.flip(img, 1, 0) for img in self.images_run_left]
         self.image_jump_right = pygame.transform.flip(images["jump"], 1, 0)
-        self.image_jump_left = pygame.transform.flip(images["jump"], 1, 0)
+        self.image_jump_left = images["jump"]
 
         self.running_images = self.images_run_right
         self.image_index = 0
@@ -338,7 +339,6 @@ class Enemy(Entity):
         self.images_right = [pygame.transform.flip(img, 1, 0) for img in images]
         self.current_images = self.images_left
         self.image_index = 0
-        self.invincibility = 0
         self.steps = 0
         self.hearts = hearts
 
@@ -372,7 +372,7 @@ class Enemy(Entity):
                 self.rect.left = block.rect.right
                 self.reverse()
 
-        self.rect.y += self.vy  # the +1 is hacky. not sure why it helps.
+        self.rect.y += self.vy
         hit_list = pygame.sprite.spritecollide(self, blocks, False)
 
         for block in hit_list:
@@ -390,15 +390,12 @@ class Enemy(Entity):
 
         self.steps = (self.steps + 1) % 20  # El 20% parece funcionar bien
 
-    def is_near(self, hero):
-        return abs(self.rect.x - hero.rect.x) < 2 * WIDTH
 
-    def update(self, level, hero):
-        if self.is_near(hero):
-            self.apply_gravity(level)
-            self.move_and_process_blocks(level.blocks)
-            self.check_world_boundaries(level)
-            self.set_images()
+    def update(self, level):
+        self.apply_gravity(level)
+        self.move_and_process_blocks(level.blocks)
+        self.check_world_boundaries(level)
+        self.set_images()
 
     def reset(self):
         self.rect.x = self.start_x
@@ -451,60 +448,6 @@ class Monster(Enemy):
 
                 elif self.vx < 0 and self.rect.left >= block.rect.left:
                     reverse = False
-
-            elif self.vy < 0:
-                self.rect.top = block.rect.bottom
-                self.vy = 0
-
-        if reverse:
-            self.reverse()
-
-
-class Bear(Enemy):
-    def __init__(self, x, y, images):
-        super().__init__(x, y, images)
-
-        self.start_x = x
-        self.start_y = y
-        self.start_vx = -4
-        self.start_vy = 0
-
-        self.vx = self.start_vx
-        self.vy = self.start_vy
-
-    def move_and_process_blocks(self, blocks):
-        reverse = False
-
-        self.rect.x += self.vx
-        hit_list = pygame.sprite.spritecollide(self, blocks, False)
-
-        for block in hit_list:
-            if self.vx > 0:
-                self.rect.right = block.rect.left
-                self.reverse()
-            elif self.vx < 0:
-                self.rect.left = block.rect.right
-                self.reverse()
-
-        self.rect.y += self.vy
-        hit_list = pygame.sprite.spritecollide(self, blocks, False)
-
-        reverse = True
-
-        for block in hit_list:
-            if self.vy >= 0:
-                self.rect.bottom = block.rect.top
-                self.vy = 0
-
-                if self.vx > 0 and self.rect.right <= block.rect.right:
-                    reverse = False
-
-                elif self.vx < 0 and self.rect.left >= block.rect.left:
-                    reverse = False
-
-            elif self.vy < 0:
-                self.rect.top = block.rect.bottom
-                self.vy = 0
 
         if reverse:
             self.reverse()
@@ -834,6 +777,7 @@ class Game:
         self.sound_btn = Button(
             image=sound_of_img, pos=(40, 100), text_input=" ", font=menu_font(20), base_color="#d7fcd4", hovering_color=WHITE
         )
+
         self.up_btn = Button(
             image=up_volume_img, pos=(40, 150), text_input=" ", font=menu_font(20), base_color="#d7fcd4", hovering_color=WHITE
         )
@@ -841,12 +785,16 @@ class Game:
             image=down_volume_img, pos=(40, 200), text_input=" ", font=menu_font(20), base_color="#d7fcd4", hovering_color=WHITE
         )
 
+        self.pause_btn = Button(
+            image=pause_img, pos=(40, 250), text_input=" ", font=menu_font(20), base_color="#d7fcd4", hovering_color=WHITE
+        )
+
         surface.blit(score_text, (WIDTH - score_text.get_width() - 32, 32))
         surface.blit(manual_img, (10, 10))
         surface.blit(hearts_text, (WIDTH - score_text.get_width() - 200, 32))
         surface.blit(lives_text, (WIDTH - score_text.get_width() - 200, 64))
         surface.blit(level_text, (WIDTH - score_text.get_width() - 200, 96))
-        for button in [self.sound_btn, self.up_btn, self.down_btn]:
+        for button in [self.sound_btn, self.pause_btn, self.up_btn, self.down_btn]:
             button.change_color(position)
             button.update(self.window)
 
@@ -910,6 +858,8 @@ class Game:
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
                 elif self.sound_btn.check_input(position):
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
+                elif self.pause_btn.check_input(position):
+                    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
                 else:
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
@@ -924,8 +874,13 @@ class Game:
                         self.volume.toggle(True)
                     if self.sound_btn.check_input(position):
                         self.pause_music.toggle()
+                    if self.pause_btn.check_input(position):
+                        self.paused_game()
                 elif self.stage == Game.MANUAL:
                     self.unpaused_game()
+                elif self.stage == Game.PAUSED:
+                    if self.pause_btn.check_input(position):
+                        self.unpaused_game()
 
             elif event.type == pygame.KEYDOWN:
                 if self.stage == Game.SPLASH or self.stage == Game.START:
@@ -974,7 +929,7 @@ class Game:
         if self.stage == Game.PLAYING:
             self.flame.update(self.level)
             self.hero.update(self.level)
-            self.level.enemies.update(self.level, self.hero)
+            self.level.enemies.update(self.level)
         if self.level.completed:
             if self.current_level < len(levels) - 1:
                 self.stage = Game.LEVEL_COMPLETED
@@ -991,8 +946,7 @@ class Game:
             self.hero.respawn(self.level)
 
     def calculate_offset(self):
-        x = -1 * self.hero.rect.centerx + WIDTH / 2
-
+        x = -1 * self.hero.rect.centerx + WIDTH / 2 # obtengo el centerx del heroe divido por dos para obtener la mitad de la pantalla
         if self.hero.rect.centerx < WIDTH / 2:
             x = 0
         elif self.hero.rect.centerx > self.level.width - WIDTH / 2:

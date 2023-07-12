@@ -3,7 +3,7 @@
 import sys
 import pygame
 from helpers.helper import Helper
-from utils.constants import menu_font, FONT_SM, WIDTH, HEIGHT, WHITE
+from utils.constants import menu_font, FONT_SM, WIDTH, HEIGHT, WHITE, HURT_SOUND, DIE_SOUND
 from play.game import play
 from utils.bdd import Connection
 from utils.buttons import Button
@@ -22,6 +22,10 @@ BG = pygame.transform.scale(BG, (WIDTH, HEIGHT))
 
 
 def instructions():
+    """
+    The `instructions` function displays instructions for a game using the Pygame library and allows the
+    user to go back to the main menu.
+    """
     while True:
         pygame.display.set_caption("Manual")
 
@@ -82,12 +86,17 @@ def instructions():
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if back.check_input(position):
+                    helper.play_sound(HURT_SOUND)
                     main_menu()
 
         pygame.display.flip()
 
 
 def text_box():
+    """
+    The `text_box` function creates a text input box in a Pygame window and allows the user to enter
+    text.
+    """
     input_text = ""
     while True:
         pygame.display.set_caption("Play")
@@ -111,14 +120,20 @@ def text_box():
                     input_text = input_text[:-1]
                 elif event.key == pygame.K_RETURN:
                     if input_text != "":
+                        helper.play_sound(HURT_SOUND)
                         play(input_text)
+                    else:
+                        helper.play_sound(DIE_SOUND)
                 else:
                     if str(event.unicode) != " " and len(input_text) < 19:
                         input_text += event.unicode
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if play_btn.check_input(position):
                     if input_text != "":
+                        helper.play_sound(HURT_SOUND)
                         play(input_text)
+                    else:
+                        helper.play_sound(DIE_SOUND)
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
@@ -131,6 +146,7 @@ def text_box():
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if back.check_input(position):
+                    helper.play_sound(HURT_SOUND)
                     main_menu()
 
         pygame.draw.rect(SCREEN, WHITE, input_rect, 2)
@@ -142,6 +158,9 @@ def text_box():
 
 
 def scores():
+    """
+    This function displays the top ten scores and corresponding players in a pygame window.
+    """
     while True:
         pygame.display.set_caption("Scores")
 
@@ -181,12 +200,17 @@ def scores():
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if back.check_input(position):
+                    helper.play_sound(HURT_SOUND)
                     main_menu()
 
         pygame.display.flip()
 
 
 def main_menu():
+    """
+    The `main_menu` function displays a menu screen with buttons for playing the game, accessing
+    instructions, viewing scores, and quitting the game.
+    """
     while True:
         pygame.display.set_caption("Menu")
         SCREEN.blit(BG, (0, 0))
@@ -227,16 +251,17 @@ def main_menu():
                     pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if play_btn.check_input(position):
+                    helper.play_sound(HURT_SOUND)
                     text_box()
                 if instruction_btn.check_input(position):
+                    helper.play_sound(HURT_SOUND)
                     instructions()
                 if scores_btn.check_input(position):
+                    helper.play_sound(HURT_SOUND)
                     scores()
                 if quit_btn.check_input(position):
+                    helper.play_sound(HURT_SOUND)
                     pygame.quit()
                     sys.exit()
         pygame.display.flip()
 
-
-if __name__ == "__main__":
-    main_menu()
